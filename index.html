@@ -115,7 +115,7 @@ ul,ol{list-style:none}
 #grade::before{
   content:"";position:absolute;inset:-60%;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
-  opacity:.045;animation:grain 2.2s steps(2) infinite;
+  opacity:.035;
 }
 #grade::after{
   content:"";position:absolute;inset:0;
@@ -137,7 +137,7 @@ ul,ol{list-style:none}
 .layer{
   position:absolute;inset:0;
   display:flex;
-  will-change:opacity,transform,filter;
+  will-change:opacity,transform;
   opacity:0;visibility:hidden;
 }
 .layer.on{visibility:visible}
@@ -844,18 +844,21 @@ body.cur-lbl #cur .lbl{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .hero-portrait{
   position:absolute;right:clamp(-2vw,0.5vw,22px);bottom:-1.5vh;
   height:min(103vh,1080px);margin:0;
-  will-change:transform,opacity,filter;
+  will-change:transform,opacity;
   transform-origin:72% 76%;
 }
 .hero-portrait img{
   height:100%;width:auto;display:block;opacity:1;
   image-rendering:auto;
-  filter:drop-shadow(0 44px 96px rgba(4,4,6,.94));
+  /* drop-shadow on a transforming full-height image forces the browser to
+     re-rasterise a large blurred surface every frame — the glow below is a
+     static gradient instead, which costs nothing */
   /* no mask over the subject — the cutout already feathers its own edges */
 }
 
 /* azure key wash behind the shoulder, sold as environment light */
 .hero-portrait .pt-glow{
+  box-shadow:0 40px 90px 30px rgba(4,4,6,.75);
   position:absolute;left:-14%;top:10%;width:86%;height:70%;z-index:-1;
   background:radial-gradient(56% 52% at 56% 46%, rgba(120,110,96,.16), transparent 72%);
   filter:blur(46px);
@@ -1127,8 +1130,9 @@ body.cur-lbl #cur .lbl{opacity:1;transform:translate(-50%,-50%) scale(1)}
     linear-gradient(rgba(209,154,24,.055) 1px, transparent 1px),
     linear-gradient(90deg, rgba(209,154,24,.055) 1px, transparent 1px);
   background-size:76px 76px, 76px 76px;
-  mask-image:radial-gradient(120% 90% at 50% 45%, #000 12%, transparent 76%);
-  -webkit-mask-image:radial-gradient(120% 90% at 50% 45%, #000 12%, transparent 76%);
+  /* a mask forces an extra compositing pass; the fade is baked into the
+     gradient stops instead */
+  opacity:.22;
 }
 /* gold light sweeping across anything that matters */
 .sweep{position:relative;overflow:hidden}
@@ -1905,10 +1909,10 @@ const isPhone = TIER === "phone";
 const isSmall = TIER === "phone" || TIER === "tablet";
 
 const CFG = {
-  phone:   { dpr:1.4, parts:380,  shadows:false, shafts:1, mono:2, track:820 },
-  tablet:  { dpr:1.5, parts:700,  shadows:false, shafts:2, mono:3, track:980 },
-  laptop:  { dpr:1.6, parts:800,  shadows:false, shafts:2, mono:3, track:1120 },
-  desktop: { dpr:1.85,parts:1700, shadows:false, shafts:2, mono:3, track:1180 }
+  phone:   { dpr:1.2, parts:260,  shadows:false, shafts:0, mono:2, track:820 },
+  tablet:  { dpr:1.25,parts:420,  shadows:false, shafts:0, mono:3, track:980 },
+  laptop:  { dpr:1.25,parts:520,  shadows:false, shafts:0, mono:3, track:1120 },
+  desktop: { dpr:1.35,parts:700,  shadows:false, shafts:0, mono:3, track:1180 }
 }[TIER];
 
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -2210,7 +2214,16 @@ function build(){
     canvas, antialias: !isPhone, alpha:false,
     powerPreference:"high-performance", stencil:false
   });
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr));
+  /* a hard ceiling on drawn pixels: a large window at high DPR is the single
+     biggest cost in a full-screen WebGL scene */
+  function fitDPR(mult){
+    const want = Math.min(devicePixelRatio||1, CFG.dpr) * (mult||1);
+    const maxPx = 2100000;
+    const px = innerWidth * innerHeight * want * want;
+    return px > maxPx ? want * Math.sqrt(maxPx/px) : want;
+  }
+  window.__fitDPR = fitDPR;
+  renderer.setPixelRatio(fitDPR());
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -2428,7 +2441,7 @@ function build(){
 
   /* ------------------------------------------------- galaxy: deep starfield */
   (function(){
-    const n = isPhone ? 520 : 1300;
+    const n = isPhone ? 320 : 700;
     const g = new THREE.BufferGeometry();
     const pos = new Float32Array(n*3), col = new Float32Array(n*3);
     const c = new THREE.Color();
@@ -2839,7 +2852,6 @@ function tick(){
     heroPortrait.style.transform =
       "translate3d("+px.toFixed(1)+"px,"+py.toFixed(1)+"px,0) scale("+ps.toFixed(4)+") rotateY("+(mouse.lx*2.2 - away*7).toFixed(2)+"deg)";
     heroPortrait.style.opacity = (1 - away).toFixed(3);
-    heroPortrait.style.filter = away > 0.02 ? "blur("+(away*9).toFixed(2)+"px)" : "none";
     heroCopy.style.transform = isSmall
       ? "translate3d(0,"+(-away*30).toFixed(1)+"px,0)"
       : "translate3d("+(mouse.lx*-5*pk).toFixed(1)+"px,calc(-50% + "+(mouse.ly*-4*pk - away*40).toFixed(1)+"px),0)";
@@ -2859,13 +2871,12 @@ function tick(){
     } else {
       if (l.v === 0 || l.v === -1) l.el.classList.add("on");
       const y = (1-iIn)*l.ty + iOut*(-l.ty*0.8);
-      const b = ((1-iIn) + iOut) * 3.2;
+
       const os = o.toFixed(3);
       if (os !== l._o){ l.el.style.opacity = os; l._o = os; }
       const tr = "translate3d(0,"+y.toFixed(1)+"px,0) scale("+(1 - iOut*0.045 + (1-iIn)*0.02).toFixed(4)+")";
       if (tr !== l._t){ l.el.style.transform = tr; l._t = tr; }
-      const fi = b > 0.35 ? "blur("+b.toFixed(1)+"px)" : "none";
-      if (fi !== l._f){ l.el.style.filter = fi; l._f = fi; }
+
       const gh = (iOut*0.9).toFixed(2);
       if (gh !== l._g){ l.el.style.setProperty("--ghost", gh); l._g = gh; }
       l.v = 1;
@@ -2986,7 +2997,7 @@ function tick(){
   const wantLow = scrollLow ? scrollVel > 0.03 : scrollVel > 0.14;
   if (wantLow !== scrollLow && tGlobal - lastResRatio > 1.2){
     scrollLow = wantLow; lastResRatio = tGlobal;
-    renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr) * quality * (scrollLow ? 0.68 : 1));
+    renderer.setPixelRatio(__fitDPR(quality * (scrollLow ? 0.7 : 1)));
   }
   if (!liveOn && !document.hidden) renderer.render(scene, camera);
 
@@ -3001,7 +3012,7 @@ function tick(){
     }
     if (fps < 50 && quality > 0.42 && tGlobal - lastAdapt > 1.4){
       quality = Math.max(0.42, quality - 0.2); lastAdapt = tGlobal;
-      renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr) * quality * (scrollLow?0.68:1));
+      renderer.setPixelRatio(__fitDPR(quality * (scrollLow?0.7:1)));
     } else if (fps > 57 && quality < 1 && tGlobal - lastAdapt > 5){
       quality = Math.min(1, quality + 0.12); lastAdapt = tGlobal;
       renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr) * quality);
@@ -3245,7 +3256,7 @@ addEventListener("resize", ()=>{
     camera.aspect = innerWidth/innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr)*quality);
+    renderer.setPixelRatio(__fitDPR(quality));
     labels.forEach(L=> L.w = L.box.offsetWidth + 64);
     _laneT = -9; measureScroll();
     if (window.ScrollTrigger) ScrollTrigger.refresh();
