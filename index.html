@@ -2581,11 +2581,16 @@ function updateTelemetry(dt){
   telemT += dt; if (telemT < 0.14) return; telemT = 0;
   const ph = PHASES[Math.min(PHASES.length-1, S.chapter)];
   if (phaseN.textContent !== ph[0]){ phaseN.textContent = ph[0]; phaseT.textContent = ph[1]; }
-  telemRows[0].innerHTML = "<b>"+String(Math.round(S.p*100)).padStart(3,"0")+"</b> %";
-  telemRows[1].innerHTML = "<b>"+ph[0].slice(6)+"</b> / "+ph[1];
-  telemRows[2].innerHTML = "X<b>"+camera.position.x.toFixed(1)+"</b> Y<b>"+camera.position.y.toFixed(1)+"</b> Z<b>"+camera.position.z.toFixed(1)+"</b>";
-  telemRows[3].innerHTML = "<b>06</b> / " + (K.sp > 0.6 ? "DEPLOYED" : K.ex > 0.4 ? "DETACHING" : "STOWED");
-  telemRows[4].innerHTML = "<b>"+Math.round(lastFps)+"</b> fps &middot; dpr <b>"+(Math.min(devicePixelRatio||1,CFG.dpr)*quality).toFixed(1)+"</b>";
+  const t0 = String(Math.round(S.p*100)).padStart(3,"0")+" %";
+  if (t0 !== telemRows[0].textContent) telemRows[0].textContent = t0;
+  const t1 = ph[0].slice(6)+" / "+ph[1];
+  if (t1 !== telemRows[1].textContent) telemRows[1].textContent = t1;
+  const t2 = "X"+camera.position.x.toFixed(1)+" Y"+camera.position.y.toFixed(1)+" Z"+camera.position.z.toFixed(1);
+  if (t2 !== telemRows[2].textContent) telemRows[2].textContent = t2;
+  const t3 = "06 / " + (K.sp > 0.6 ? "DEPLOYED" : K.ex > 0.4 ? "DETACHING" : "STOWED");
+  if (t3 !== telemRows[3].textContent) telemRows[3].textContent = t3;
+  const t4 = Math.round(lastFps)+" fps \u00b7 dpr "+(Math.min(devicePixelRatio||1,CFG.dpr)*quality).toFixed(1);
+  if (t4 !== telemRows[4].textContent) telemRows[4].textContent = t4;
 }
 
 const CHAP = [
@@ -2630,9 +2635,16 @@ const camTarget = new THREE.Vector3(), camWant = new THREE.Vector3(), camDir = n
 const dumA = new THREE.Object3D(), dumB = new THREE.Object3D();
 const qOut = new THREE.Quaternion(), qCam = new THREE.Quaternion();
 let rawP = 0, spin = 0, tGlobal = 0, labelsCompact = null, scrollVel = 0, lastTickP = 0;
-let fpsAcc = 0, fpsN = 0, lastAdapt = 0, lastFps = 60;
+let fpsAcc = 0, fpsN = 0, lastAdapt = 0, lastFps = 60, scrollLow = false, lastResRatio = -9;
 
-function maxScroll(){ return Math.max(1, document.documentElement.scrollHeight - innerHeight); }
+/* scrollHeight forces a synchronous layout, so it is measured on resize
+   only and reused every frame */
+let _maxScroll = 1;
+function measureScroll(){
+  _maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+  _railH = rail.clientHeight || 1;
+}
+function maxScroll(){ return _maxScroll; }
 
 function tick(){
   requestAnimationFrame(tick);
@@ -2648,7 +2660,7 @@ function tick(){
      mobile too where the velocity voice alone is easy to miss */
   if (Math.abs(S.p - lastTickP) > 0.028){ lastTickP = S.p; Audio_.play("tick"); }
   Audio_.setDuck((liveOn || (vid.src && !vid.paused)) ? 0.25 : 1);
-  S.p += (rawP - S.p) * (reduce ? 1 : 1 - Math.pow(0.00002, dt));
+  S.p += (rawP - S.p) * (reduce ? 1 : 1 - Math.pow(1e-13, dt));
 
   evalKeys(S.p);
 
@@ -2848,10 +2860,14 @@ function tick(){
       if (l.v === 0 || l.v === -1) l.el.classList.add("on");
       const y = (1-iIn)*l.ty + iOut*(-l.ty*0.8);
       const b = ((1-iIn) + iOut) * 3.2;
-      l.el.style.opacity = o.toFixed(3);
-      l.el.style.transform = "translate3d(0,"+y.toFixed(2)+"px,0) scale("+(1 - iOut*0.045 + (1-iIn)*0.02).toFixed(4)+")";
-      l.el.style.filter = b > 0.35 ? "blur("+b.toFixed(2)+"px)" : "none";
-      l.el.style.setProperty("--ghost", (iOut*0.9).toFixed(3));
+      const os = o.toFixed(3);
+      if (os !== l._o){ l.el.style.opacity = os; l._o = os; }
+      const tr = "translate3d(0,"+y.toFixed(1)+"px,0) scale("+(1 - iOut*0.045 + (1-iIn)*0.02).toFixed(4)+")";
+      if (tr !== l._t){ l.el.style.transform = tr; l._t = tr; }
+      const fi = b > 0.35 ? "blur("+b.toFixed(1)+"px)" : "none";
+      if (fi !== l._f){ l.el.style.filter = fi; l._f = fi; }
+      const gh = (iOut*0.9).toFixed(2);
+      if (gh !== l._g){ l.el.style.setProperty("--ghost", gh); l._g = gh; }
       l.v = 1;
     }
   }
@@ -2928,8 +2944,10 @@ function tick(){
       L.sy = clamp(L.sy, 80, innerHeight - 80);
       const dim = (S.hover >= 0 && S.hover !== i) ? 1 : 0;
       const op = modOn * (1 - S.openT) * (dim?0.26:1) * (S.open===i?0:1);
-      L.el.style.transform = "translate3d("+L.sx.toFixed(1)+"px,"+L.sy.toFixed(1)+"px,0)";
-      L.el.style.opacity = op.toFixed(3);
+      const ltr = "translate3d("+L.sx.toFixed(1)+"px,"+L.sy.toFixed(1)+"px,0)";
+      if (ltr !== L._t){ L.el.style.transform = ltr; L._t = ltr; }
+      const lop = op.toFixed(2);
+      if (lop !== L._o){ L.el.style.opacity = lop; L._o = lop; }
       L.el.style.pointerEvents = (live && op>0.5) ? "auto" : "none";
       if (live !== L.live){ L.el.classList.toggle("live", live); L.live = live; }
 
@@ -2938,16 +2956,21 @@ function tick(){
       const ax = L.mx + L.rad * 0.55, ay = L.my;
       const bx = L.sx, by = L.sy;
       const mid = Math.max(ax + 14, bx - 26);
-      ln.setAttribute("d", "M"+ax.toFixed(1)+","+ay.toFixed(1)+
-                           " L"+(ax+12).toFixed(1)+","+ay.toFixed(1)+
-                           " L"+mid.toFixed(1)+","+by.toFixed(1)+
-                           " L"+bx.toFixed(1)+","+by.toFixed(1));
-      ln.style.opacity = (op*0.9).toFixed(3);
+      const d = "M"+ax.toFixed(0)+","+ay.toFixed(0)+
+                " L"+(ax+12).toFixed(0)+","+ay.toFixed(0)+
+                " L"+mid.toFixed(0)+","+by.toFixed(0)+
+                " L"+bx.toFixed(0)+","+by.toFixed(0);
+      if (d !== L._d){ ln.setAttribute("d", d); L._d = d; }
+      const lnop = (op*0.9).toFixed(2);
+      if (lnop !== L._lo){ ln.style.opacity = lnop; L._lo = lnop; }
       ln.classList.toggle("hot", S.hover === i);
       const dot = leadDots[i];
-      dot.setAttribute("cx", ax.toFixed(1)); dot.setAttribute("cy", ay.toFixed(1));
-      dot.setAttribute("r", S.hover===i ? 5 : 3);
-      dot.style.opacity = (op*0.8).toFixed(3);
+      const dk = ax.toFixed(0)+","+ay.toFixed(0)+","+(S.hover===i?5:3);
+      if (dk !== L._dk){
+        dot.setAttribute("cx", ax.toFixed(0)); dot.setAttribute("cy", ay.toFixed(0));
+        dot.setAttribute("r", S.hover===i ? 5 : 3); L._dk = dk;
+      }
+      if (lnop !== L._do){ dot.style.opacity = lnop; L._do = lnop; }
     }
   }
 
@@ -2955,6 +2978,16 @@ function tick(){
   updateRail(S.p);
   updateTelemetry(dt);
 
+  /* Dynamic resolution: while the page is actually moving, render fewer
+     pixels. Two states only, with hysteresis, because resizing the drawing
+     buffer is itself costly and must not happen every frame. */
+  /* wide hysteresis band: reallocating the drawing buffer is expensive, so
+     it may only happen on a sustained change of state, never on a flicker */
+  const wantLow = scrollLow ? scrollVel > 0.03 : scrollVel > 0.14;
+  if (wantLow !== scrollLow && tGlobal - lastResRatio > 1.2){
+    scrollLow = wantLow; lastResRatio = tGlobal;
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr) * quality * (scrollLow ? 0.68 : 1));
+  }
   if (!liveOn && !document.hidden) renderer.render(scene, camera);
 
   /* adaptive quality */
@@ -2968,7 +3001,7 @@ function tick(){
     }
     if (fps < 50 && quality > 0.42 && tGlobal - lastAdapt > 1.4){
       quality = Math.max(0.42, quality - 0.2); lastAdapt = tGlobal;
-      renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr) * quality);
+      renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr) * quality * (scrollLow?0.68:1));
     } else if (fps > 57 && quality < 1 && tGlobal - lastAdapt > 5){
       quality = Math.min(1, quality + 0.12); lastAdapt = tGlobal;
       renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr) * quality);
@@ -2987,9 +3020,10 @@ const railBtns = CHAP.map((c,i)=>{
   return b;
 });
 let railCur = -1;
+let _railH = 1, _railLast = -1;
 function updateRail(p){
-  const h = rail.clientHeight;
-  railFill.style.height = (p*h).toFixed(1)+"px";
+  const hh = (p*_railH);
+  if (Math.abs(hh - _railLast) > 0.5){ railFill.style.height = hh.toFixed(1)+"px"; _railLast = hh; }
   let cur = 0;
   for (let i=0;i<CHAP.length;i++) if (p >= CHAP[i].p - 0.045) cur = i;
   if (cur !== railCur){
@@ -3213,6 +3247,7 @@ addEventListener("resize", ()=>{
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr)*quality);
     labels.forEach(L=> L.w = L.box.offsetWidth + 64);
+    _laneT = -9; measureScroll();
     if (window.ScrollTrigger) ScrollTrigger.refresh();
   }, 160);
 }, {passive:true});
@@ -4288,6 +4323,18 @@ function init(){
   gsap.ticker.lagSmoothing(0);
   build();
 
+  /* Every material compiles its shader the first time it is drawn. Left
+     alone, that cost lands mid-scroll, exactly when a new section appears —
+     which is what reads as a stutter. Compile the whole scene up front so
+     the hitch happens behind the loading screen instead. */
+  (function precompile(){
+    const was = [];
+    scene.traverse(o => { was.push([o, o.visible]); o.visible = true; });
+    try { renderer.compile(scene, camera); } catch(e){}
+    try { renderer.render(scene, camera); } catch(e){}
+    was.forEach(([o, v]) => { o.visible = v; });
+  })();
+
   // real imagery
   $("#hero-img").src = IMGX.heroCut;
   $("#end-img").src  = IMGX.altCut;
@@ -4318,6 +4365,8 @@ function init(){
 
   window.__dbg=()=>({p:+S.p.toFixed(3),sp:+K.sp.toFixed(3),ex:+K.ex.toFixed(3),max:maxScroll(),track:$("#track").style.height});
   scrollTo(0,0);
+  measureScroll();
+  setTimeout(measureScroll, 400);
   tick();
   runBoot();
 }
