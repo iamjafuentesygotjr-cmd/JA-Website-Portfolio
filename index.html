@@ -115,7 +115,7 @@ ul,ol{list-style:none}
 #grade::before{
   content:"";position:absolute;inset:-60%;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
-  opacity:.035;
+  opacity:.055;animation:grain 2.4s steps(2) infinite;
 }
 #grade::after{
   content:"";position:absolute;inset:0;
@@ -1132,7 +1132,7 @@ body.cur-lbl #cur .lbl{opacity:1;transform:translate(-50%,-50%) scale(1)}
   background-size:76px 76px, 76px 76px;
   /* a mask forces an extra compositing pass; the fade is baked into the
      gradient stops instead */
-  opacity:.22;
+  opacity:.42;
 }
 /* gold light sweeping across anything that matters */
 .sweep{position:relative;overflow:hidden}
@@ -1909,10 +1909,10 @@ const isPhone = TIER === "phone";
 const isSmall = TIER === "phone" || TIER === "tablet";
 
 const CFG = {
-  phone:   { dpr:1.2, parts:260,  shadows:false, shafts:0, mono:2, track:820 },
-  tablet:  { dpr:1.25,parts:420,  shadows:false, shafts:0, mono:3, track:980 },
-  laptop:  { dpr:1.25,parts:520,  shadows:false, shafts:0, mono:3, track:1120 },
-  desktop: { dpr:1.35,parts:700,  shadows:false, shafts:0, mono:3, track:1180 }
+  phone:   { dpr:2.0, parts:520,  shadows:false, shafts:1, mono:2, track:820 },
+  tablet:  { dpr:2.0, parts:900,  shadows:false, shafts:2, mono:3, track:980 },
+  laptop:  { dpr:2.0, parts:1400, shadows:false, shafts:2, mono:3, track:1120 },
+  desktop: { dpr:2.0, parts:1900, shadows:true,  shafts:2, mono:3, track:1180 }
 }[TIER];
 
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -2130,9 +2130,14 @@ function galaxyTex(){
     g.addColorStop(1,"rgba(0,0,0,0)");
     x.fillStyle=g; x.beginPath(); x.arc(bx,by,rad,0,7); x.fill();
   }
+  /* bake the panel opacity into the pixels so the material can be opaque:
+     identical appearance, one less full-screen blend per frame */
   x.globalCompositeOperation="source-over";
+  const img=x.getImageData(0,0,W,H), d=img.data;
+  for(let i=0;i<d.length;i+=4){ d[i]*=0.80; d[i+1]*=0.80; d[i+2]*=0.80; d[i+3]=255; }
+  x.putImageData(img,0,0);
   const t=new THREE.CanvasTexture(c);
-  t.anisotropy=4; t.minFilter=THREE.LinearFilter; t.generateMipmaps=false;
+  t.anisotropy=8; t.minFilter=THREE.LinearFilter; t.generateMipmaps=false;
   return t;
 }
 
@@ -2218,7 +2223,7 @@ function build(){
      biggest cost in a full-screen WebGL scene */
   function fitDPR(mult){
     const want = Math.min(devicePixelRatio||1, CFG.dpr) * (mult||1);
-    const maxPx = 2100000;
+    const maxPx = 4400000;   /* full sharpness; only very large 4K windows clamp */
     const px = innerWidth * innerHeight * want * want;
     return px > maxPx ? want * Math.sqrt(maxPx/px) : want;
   }
@@ -2226,6 +2231,7 @@ function build(){
   renderer.setPixelRatio(fitDPR());
   renderer.setSize(innerWidth, innerHeight);
   renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.autoClearColor = false;   /* the galaxy plate covers the frame */
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.06;
   if (CFG.shadows){
@@ -2441,7 +2447,7 @@ function build(){
 
   /* ------------------------------------------------- galaxy: deep starfield */
   (function(){
-    const n = isPhone ? 320 : 700;
+    const n = isPhone ? 900 : 2200;
     const g = new THREE.BufferGeometry();
     const pos = new Float32Array(n*3), col = new Float32Array(n*3);
     const c = new THREE.Color();
@@ -2470,8 +2476,8 @@ function build(){
   (function(){
     const m = new THREE.Mesh(
       new THREE.PlaneGeometry(1340, 670),
-      new THREE.MeshBasicMaterial({ map: galaxyTex(), transparent:true, opacity:0.80,
-        depthWrite:false, fog:false })
+      new THREE.MeshBasicMaterial({ map: galaxyTex(), transparent:false,
+        depthWrite:false, depthTest:false, fog:false, toneMapped:false })
     );
     m.material.map.wrapS = m.material.map.wrapT = THREE.RepeatWrapping;
     m.position.set(0, 0, -380);
@@ -2509,7 +2515,6 @@ function build(){
           float sweep = smoothstep(0.0, 1.0, sin(r*0.09 - uT*0.85)*0.5+0.5) * 0.35 + 0.65;
           vec3 col = mix(vec3(0.26,0.19,0.09), vec3(1.0,0.85,0.56), g);
           float a = g * fall * uOp * sweep * (1.0 - vFog*0.85);
-          if (a < 0.002) discard;
           gl_FragColor = vec4(col, a);
         }`
     })
@@ -2994,11 +2999,6 @@ function tick(){
      buffer is itself costly and must not happen every frame. */
   /* wide hysteresis band: reallocating the drawing buffer is expensive, so
      it may only happen on a sustained change of state, never on a flicker */
-  const wantLow = scrollLow ? scrollVel > 0.03 : scrollVel > 0.14;
-  if (wantLow !== scrollLow && tGlobal - lastResRatio > 1.2){
-    scrollLow = wantLow; lastResRatio = tGlobal;
-    renderer.setPixelRatio(__fitDPR(quality * (scrollLow ? 0.7 : 1)));
-  }
   if (!liveOn && !document.hidden) renderer.render(scene, camera);
 
   /* adaptive quality */
@@ -3010,11 +3010,11 @@ function tick(){
       if (dust) dust.visible = false;
       shafts.forEach(sh=> sh.visible = false);
     }
-    if (fps < 50 && quality > 0.42 && tGlobal - lastAdapt > 1.4){
-      quality = Math.max(0.42, quality - 0.2); lastAdapt = tGlobal;
-      renderer.setPixelRatio(__fitDPR(quality * (scrollLow?0.7:1)));
-    } else if (fps > 57 && quality < 1 && tGlobal - lastAdapt > 5){
-      quality = Math.min(1, quality + 0.12); lastAdapt = tGlobal;
+    if (fps < 48 && quality > 0.82 && tGlobal - lastAdapt > 1.4){
+      quality = Math.max(0.82, quality - 0.06); lastAdapt = tGlobal;
+      renderer.setPixelRatio(__fitDPR(quality));
+    } else if (fps > 57 && quality < 1 && tGlobal - lastAdapt > 3){
+      quality = Math.min(1, quality + 0.06); lastAdapt = tGlobal;
       renderer.setPixelRatio(Math.min(devicePixelRatio||1, CFG.dpr) * quality);
     }
   }
