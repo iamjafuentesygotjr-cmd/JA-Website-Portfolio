@@ -1252,6 +1252,88 @@ body.lite .sweep::before{animation:none;display:none}
   #grade::before{animation:none}
   .scroll-cue .bar::after{animation:none;transform:translateY(0)}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE ONLY — everything below is scoped to small screens. The fixed
+   layers cannot scroll internally, so on a phone each section has to fit
+   the viewport exactly: tighter type, fewer optional elements, no overlap.
+   Desktop rules above are untouched.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width:820px){
+
+  /* about: the ghosted headline was sitting on top of its own body copy */
+  #l-mani{align-items:flex-end}
+  .mani{display:flex;flex-direction:column;gap:14px;padding-bottom:9vh}
+  .mani-head{
+    font-size:clamp(1.7rem,8.6vw,2.5rem);line-height:.98;max-width:none;order:1;
+  }
+  .mani-body{order:2;gap:12px}
+  .mani-body p{font-size:.82rem;line-height:1.55}
+  .mani-body p:nth-of-type(2){display:none}      /* one paragraph is enough here */
+  .spec{gap:20px;padding-top:10px}
+  .spec dd{font-size:1.5rem}
+  .spec dt{font-size:8.5px}
+
+  /* services: all six, two columns, no descriptions below 560px */
+  .serv{padding-bottom:8vh}
+  .serv-head h2{font-size:clamp(1.4rem,6.6vw,1.9rem)}
+  .serv-head .kick{margin-bottom:10px}
+  .serv-grid{grid-template-columns:1fr 1fr}
+  .serv-grid article:nth-child(n+5){display:block}
+  .serv-grid article{padding:11px 12px 13px}
+  .serv-grid .n{margin-bottom:8px;font-size:8.5px}
+  .serv-grid h3{font-size:.8rem;line-height:1.15;margin-bottom:5px}
+  .serv-grid p{font-size:.68rem;line-height:1.4}
+
+  /* proof: two quotes carry it on a phone, the rest would overflow */
+  .proof{padding-bottom:8vh}
+  .lead-q{font-size:clamp(1.05rem,5.2vw,1.45rem);line-height:1.22;max-width:none}
+  .q-list{gap:10px;margin-top:16px}
+  .q-list li:nth-child(n+3){display:none}
+  .q-list p{font-size:.76rem;line-height:1.45;max-width:none}
+  .attrib b{font-size:.8rem}
+
+  /* process: four moves as a 2x2 grid that actually fits */
+  .proc{padding-bottom:8vh}
+  .proc-head{margin-bottom:14px;gap:10px}
+  .proc-head h2{font-size:clamp(1.35rem,6.2vw,1.85rem)}
+  .proc-head p{display:none}
+  .steps{grid-template-columns:1fr 1fr}
+  .step{padding:12px 12px 16px}
+  .step .n{margin-bottom:10px;font-size:8.5px}
+  .step h3{font-size:.82rem;margin-bottom:5px}
+  .step p{font-size:.68rem;line-height:1.4}
+
+  /* contact */
+  .end{gap:16px}
+  .end h2{font-size:clamp(1.6rem,7.6vw,2.2rem)}
+  .end-grid{gap:12px}
+  .end-grid dd{font-size:.8rem}
+  .colophon{font-size:8px;gap:6px}
+
+  /* project tour: the tab row was running off the right edge */
+  .tour-bar{flex-wrap:wrap;row-gap:10px}
+  .tour-tools{width:100%;justify-content:space-between}
+  .tabs{flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{flex:none}
+  .tour-id h2{font-size:1rem}
+
+  /* tour footer: the CTA gets its own full-width row instead of being
+     squeezed between prev and next */
+  .tour-foot{flex-wrap:wrap;row-gap:10px;padding-bottom:18px}
+  .tour-foot .cta-gold{order:-1;width:100%;justify-content:space-between;white-space:nowrap}
+  .tour-dots{display:none}
+  .nav-pn{max-width:42vw}
+  .nav-pn .nmx{font-size:.8rem}
+}
+
+@media (max-width:560px){
+  .serv-grid p{display:none}
+  .serv-grid article{padding:13px 12px}
+  .serv-grid h3{font-size:.84rem}
+  .q-list{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
