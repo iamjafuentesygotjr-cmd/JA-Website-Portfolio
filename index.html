@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Jose Andres Ygot Jr. — Interactive Systems</title>
-<meta name="description" content="I don't just show the work. I show how it works. Interactive systems, AI course experiences, sales demos, 3D simulations and lead generation, built by Jose Andres Ygot Jr.">
+<title>Jose Andres &ldquo;JA&rdquo; Ygot Jr. — Interactive Systems</title>
+<meta name="description" content="I don't just show the work. I show how it works. Interactive systems, AI course experiences, sales demos, 3D simulations and lead generation, built by Jose Andres &quot;JA&quot; Ygot Jr.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800;900&family=Archivo+Expanded:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -164,7 +164,7 @@ ul,ol{list-style:none}
   border:1px solid var(--hair);
   clip-path:polygon(0 0,100% 0,100% 62%,88% 100%,0 100%);
 }
-.ident .who{display:flex;flex-direction:column;gap:2px}
+.ident .who{display:flex;align-items:center}
 .ident .who b{font-weight:600;font-size:12.5px;letter-spacing:.01em;color:var(--paper)}
 .ident .who span{font-family:var(--ff-m);font-size:10px;letter-spacing:.14em;color:var(--dim)}
 
@@ -874,6 +874,8 @@ body.cur-lbl #cur .lbl{opacity:1;transform:translate(-50%,-50%) scale(1)}
   -webkit-text-stroke:1px rgba(219,193,143,.6);
 }
 .hero-name{color:var(--ice);opacity:.85}
+.hero-name .nick{color:var(--paper);opacity:1}
+.ident .who b .nick{color:var(--ice)}
 
 /* foreground plates — the layer nearest the viewer, so it moves most */
 .hero-hud{
@@ -1274,9 +1276,9 @@ body.lite .sweep::before{animation:none;display:none}
 
 <!-- ============================================================== chrome -->
 <header id="top">
-  <a class="ident" href="#l-hero" data-jump="0" aria-label="Jose Andres Ygot Jr., back to start">
+  <a class="ident" href="#l-hero" data-jump="0" aria-label="Jose Andres &quot;JA&quot; Ygot Jr., back to start">
     <span class="mk">JA</span>
-    <span class="who"><b>Jose Andres Ygot Jr.</b><span>Interactive systems</span></span>
+    <span class="who"><b>Jose Andres <span class="nick">&ldquo;JA&rdquo;</span> Ygot Jr.</b></span>
   </a>
   <div class="top-right">
     <button id="snd" class="snd" aria-pressed="false" aria-label="Toggle sound">
@@ -1312,13 +1314,13 @@ body.lite .sweep::before{animation:none;display:none}
       <!-- the portrait sits in the environment, between the JA monogram
            behind it and the interface plates in front of it -->
       <figure class="hero-portrait" id="hero-portrait">
-        <img id="hero-img" alt="Jose Andres Ygot Jr." decoding="async" fetchpriority="high">
+        <img id="hero-img" alt="Jose Andres &quot;JA&quot; Ygot Jr." decoding="async" fetchpriority="high">
         <span class="pt-glow" aria-hidden="true"></span>
       </figure>
 
       <div class="hero-copy" id="hero-copy">
         <div class="hero-eyebrow"><span class="ln" aria-hidden="true"></span><span>Portfolio 2026 / Philippines</span></div>
-        <p class="hero-name">JOSE ANDRES YGOT JR.</p>
+        <p class="hero-name">JOSE ANDRES <span class="nick">&ldquo;JA&rdquo;</span> YGOT JR.</p>
         <h1 class="hero-tag">
           <span class="hero-line"><span>I don't just</span></span>
           <span class="hero-line"><span><em>show</em> the work.</span></span>
@@ -1354,7 +1356,7 @@ body.lite .sweep::before{animation:none;display:none}
     <div class="mani">
       <figure class="pt-wrap">
         <div class="pt"><img id="pt-img" alt="Jose Andres Ygot Jr." decoding="async"></div>
-        <figcaption class="pt-cap"><span>Jose Andres Ygot Jr.</span><span>PH</span></figcaption>
+        <figcaption class="pt-cap"><span>Jose Andres &ldquo;JA&rdquo; Ygot Jr.</span><span>PH</span></figcaption>
       </figure>
       <h2 class="d1 mani-head">Every build <b>opens up.</b></h2>
       <div class="mani-body">
@@ -1474,7 +1476,7 @@ body.lite .sweep::before{animation:none;display:none}
         <div><dt>Currently</dt><dd>Taking two builds for Q1 2027. Simulation and course work booked first.</dd></div>
       </dl>
       <div class="colophon">
-        <span>Jose Andres Ygot Jr. — I don't just show the work. I show how it works.</span>
+        <span>Jose Andres &ldquo;JA&rdquo; Ygot Jr. — I don't just show the work. I show how it works.</span>
         <span>Built in WebGL — no template underneath</span>
       </div>
     </div>
@@ -3191,7 +3193,7 @@ function runBoot(){
       bootPct.textContent = String(Math.floor(o.v)).padStart(2,"0");
       bootFillT.style.clipPath = "inset("+(100-o.v)+"% 0 0 0)";
     }}, 0)
-    .add(()=> bootMsg.textContent = "JOSE ANDRES YGOT JR.", reduce?0.3:1.95)
+    .add(()=> bootMsg.textContent = "JOSE ANDRES \u201cJA\u201d YGOT JR.", reduce?0.3:1.95)
     .add(()=>{ $("#boot-enter").classList.add("on"); }, reduce?0.3:2.05);
 
   /* Nothing may stand between the visitor and the site. The screen is
